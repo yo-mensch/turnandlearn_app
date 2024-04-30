@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
@@ -32,15 +33,44 @@ class _OpenCameraAndGalleryButtonState extends State<OpenCameraAndGalleryButton>
   String _recognizedText = '';
 
   Future<void> _processImage(XFile image) async {
-    final inputImage = InputImage.fromFilePath(image.path);
-    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-    await textRecognizer.close();
+    try {
+      final croppedImage = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatioPresets: [
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio16x9
+        ],
+        uiSettings: [
+          AndroidUiSettings(
+              toolbarTitle: 'Cropper',
+              toolbarColor: Colors.deepOrange,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false),
+          IOSUiSettings(
+            title: 'Cropper',
+          )
+        ],
+      );
 
-    setState(() {
-      _recognizedText = recognizedText.text;
-    });
+      if (croppedImage != null) {
+        final inputImage = InputImage.fromFilePath(croppedImage.path);
+        final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+        final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+        await textRecognizer.close();
+
+        setState(() {
+          _recognizedText = recognizedText.text;
+        });
+      }
+    } catch (e) {
+      print('Error cropping image: $e');
+    }
   }
+
 
   Future<void> _openGallery() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
