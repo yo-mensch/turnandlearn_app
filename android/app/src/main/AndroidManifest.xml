@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+
 
     <!-- For Android 11 (API level 30) and above, use the MANAGE_EXTERNAL_STORAGE permission for broad access to external storage. -->
     <!-- However, this requires additional justification for use when submitting your app to the Play Store. -->

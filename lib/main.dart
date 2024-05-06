@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-import 'screens/ingredient_analysis.dart';  // Assuming this holds your existing code
-import 'screens/user_profile.dart';         // This will be your new user profile screen
+import 'screens/ingredient_analysis.dart';
+import 'screens/user_profile.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MyApp());
 }
 
@@ -12,6 +18,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Text Recognition App',
       home: HomeScreen(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
     );
   }
 }
@@ -37,7 +47,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _children[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _children,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: onTabTapped,
         currentIndex: _currentIndex,
@@ -51,11 +64,10 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Profile',
           ),
         ],
-        backgroundColor: Colors.blue,  // Vivid color for the navigation bar
+        backgroundColor: Colors.blue,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
       ),
     );
   }
 }
-
