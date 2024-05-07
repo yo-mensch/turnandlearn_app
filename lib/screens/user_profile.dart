@@ -14,10 +14,8 @@ class _UserProfileState extends State<UserProfile> {
   final _passwordController = TextEditingController();
   final FirestoreAuthService _authService = FirestoreAuthService();
 
-  // Gets the current user from FirebaseAuth
   User? get _user => FirebaseAuth.instance.currentUser;
 
-  // Login function
   Future<void> _login() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
@@ -26,9 +24,7 @@ class _UserProfileState extends State<UserProfile> {
           _passwordController.text,
         );
         if (user != null) {
-          setState(() {
-            // User is automatically updated in _user via FirebaseAuth
-          });
+          setState(() {});
         }
       } on FirebaseAuthException catch (e) {
         _showDialog("Login Failed", e.message ?? "An error occurred.");
@@ -36,14 +32,43 @@ class _UserProfileState extends State<UserProfile> {
     }
   }
 
-  // Logout function
   void _logout() async {
     await _authService.logout();
-    setState(() {
-    });
+    setState(() {});
   }
 
-  // Dialog to display messages
+  void _deactivateAccount() async {
+    try {
+      await _user?.delete();
+      _logout(); // Logs out the user and clears the UI
+    } catch (e) {
+      _showDialog("Deactivation Failed", "Failed to deactivate account. ${e}");
+    }
+  }
+
+  void _confirmDeactivation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Confirm Deactivation"),
+        content: Text("Are you sure you want to deactivate your account? This cannot be undone."),
+        actions: <Widget>[
+          TextButton(
+            child: Text("Cancel"),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text("Deactivate"),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              _deactivateAccount();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showDialog(String title, String content) {
     showDialog(
       context: context,
@@ -70,7 +95,6 @@ class _UserProfileState extends State<UserProfile> {
     );
   }
 
-  // Builds the login form
   Widget _buildLoginForm() {
     return Form(
       key: _formKey,
@@ -101,7 +125,6 @@ class _UserProfileState extends State<UserProfile> {
     );
   }
 
-  // Builds user panel when logged in
   Widget _buildUserPanel() {
     return Center(
       child: Column(
@@ -111,6 +134,11 @@ class _UserProfileState extends State<UserProfile> {
           ElevatedButton(
             onPressed: _logout,
             child: Text('Logout'),
+          ),
+          ElevatedButton(
+            onPressed: _confirmDeactivation,
+            child: Text('Deactivate Account'),
+            style: ElevatedButton.styleFrom(primary: Colors.red),
           ),
         ],
       ),
