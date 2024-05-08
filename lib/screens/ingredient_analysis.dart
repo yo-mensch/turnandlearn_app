@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -18,6 +19,8 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
   List<dynamic> _allergens = [];
   List<String> _fullIngredients = [];
   User? user;
+  final TextEditingController _productNameController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -65,10 +68,12 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
         await textRecognizer.close();
 
         List<String> ingredients = recognizedText.text.split(',');
+        ingredients = cleanIngredientList(ingredients);
+
         final jsonIngredients = jsonEncode({'ingredients': ingredients});
 
         var response = await http.post(
-          Uri.parse('http://10.0.2.2:8000/ingredients/'),
+          Uri.parse('http://192.168.1.207:8000/ingredients/'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -98,6 +103,30 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
     }
   }
 
+  List<String> cleanIngredientList(List<String> ingredients) {
+    if (ingredients.isNotEmpty) {
+      String ingredientsText = ingredients.join(','); // Join back to single string to handle global replacements.
+
+      // Regex to replace commas in specific chemical names like '1,2-Hexanediol'
+      RegExp exp = RegExp(r'(\d+,\d+)-([a-zA-Z]+)');
+      ingredientsText = ingredientsText.replaceAllMapped(exp, (Match m) => '${m[1]?.replaceAll(',', '.')}-${m[2]}');
+
+      // Now split by commas after replacements
+      ingredients = ingredientsText.split(',');
+
+      // Optionally clean up any leading or trailing spaces from each ingredient
+      ingredients = ingredients.map((ingredient) => ingredient.trim()).toList();
+
+      // Optionally further clean if 'ingredients:' or similar prefix exists
+      if (ingredients.first.toLowerCase().contains('ingredients:')) {
+        ingredients[0] = ingredients.first.split(':').last.trim();
+      }
+    }
+
+    return ingredients;
+  }
+
+
   Future<void> _openGallery() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -113,10 +142,57 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
   }
 
   void _saveProduct() {
-    print('Product saved: ${_fullIngredients.join(', ')}');
-    // Implement actual save logic here
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Save Product"),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              TextField(
+                controller: _productNameController,
+                decoration: InputDecoration(hintText: "Enter product name"),
+              ),
+              SizedBox(height: 20),
+              Text("Allergens: ${_allergens.map((a) => a['ingredient']).join(', ')}"),
+              Text("Ingredients: ${_fullIngredients.join(', ')}"),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text("Cancel"),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: Text("Submit"),
+            onPressed: () async {
+              await _firestore.collection("products").add({
+                "name": _productNameController.text,
+                "allergens": _allergens.map((a) => a['ingredient']).toList(),
+                "ingredients": _fullIngredients,
+                "userId": user?.uid,
+              });
+              Navigator.of(context).pop();
+              _resetState();
+            },
+          ),
+        ],
+      ),
+    );
   }
-  @override
+
+  void _resetState() {
+    setState(() {
+      _recognizedText = '';
+      _allergens.clear();
+      _fullIngredients.clear();
+      _productNameController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -95,7 +95,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(labelText: 'Email'),
-                validator: (value) => value!.isEmpty ? "Please enter an email" : null,
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter your email';
+                    }
+                    // Regular expression for email validation
+                    String pattern = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$';
+                    RegExp regex = RegExp(pattern);
+                    if (!regex.hasMatch(value!)) {
+                      return 'Please enter a valid email address';
+                    }
+                    return null;
+                  }
               ),
               SizedBox(height: 20),
               TextFormField(
