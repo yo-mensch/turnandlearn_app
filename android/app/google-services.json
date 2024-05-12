@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1058983427413",
+    "project_id": "turnandlearn-1f847",
+    "storage_bucket": "turnandlearn-1f847.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058983427413:android:8907d7a3a69e65f1a1c3dc",
+        "android_client_info": {
+          "package_name": "com.example.turn_and_learn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI50UqEXPmQQqdoCtbUiiDPzkLd4R60DI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
