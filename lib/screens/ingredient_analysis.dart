@@ -38,19 +38,22 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
       final croppedImage = await ImageCropper().cropImage(
         sourcePath: image.path,
         aspectRatioPresets: [
+          CropAspectRatioPreset.original,
           CropAspectRatioPreset.square,
           CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
           CropAspectRatioPreset.ratio4x3,
-          CropAspectRatioPreset.ratio16x9
+          CropAspectRatioPreset.ratio16x9,
+          CropAspectRatioPreset.ratio7x5,
         ],
         uiSettings: [
           AndroidUiSettings(
               toolbarTitle: 'Cropper',
-              toolbarColor: Colors.deepOrange,
+              toolbarColor: Colors.blue,
               toolbarWidgetColor: Colors.white,
               initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false),
+              lockAspectRatio: false,
+              hideBottomControls: false,
+          ),
           IOSUiSettings(
             title: 'Cropper',
           )
@@ -73,7 +76,7 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
         final jsonIngredients = jsonEncode({'ingredients': ingredients});
 
         var response = await http.post(
-          Uri.parse('http://192.168.1.207:8000/ingredients/'),
+          Uri.parse('http://10.0.2.2:8000/ingredients/'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -82,6 +85,7 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
 
         if (response.statusCode == 200) {
           var jsonResponse = json.decode(response.body);
+          print(jsonResponse);
           setState(() {
             _isLoading = false; // Hide loading indicator
             _allergens = jsonResponse['results'].where((res) => res['potential_allergen'] == 'Potential allergen').toList();
@@ -105,22 +109,25 @@ class _IngredientAnalysisState extends State<IngredientAnalysis> {
 
   List<String> cleanIngredientList(List<String> ingredients) {
     if (ingredients.isNotEmpty) {
-      String ingredientsText = ingredients.join(','); // Join back to single string to handle global replacements.
-
-      // Regex to replace commas in specific chemical names like '1,2-Hexanediol'
+      String ingredientsText = ingredients.join(',');
+      ingredientsText = ingredientsText.replaceAll('"', '');
+      ingredientsText = ingredientsText.replaceAll('(and)', ',');
+      int colonIndex = ingredientsText.indexOf(':');
+      if (colonIndex != -1) {
+        ingredientsText = ingredientsText.substring(colonIndex + 1);
+      }
+      int periodIndex = ingredientsText.indexOf('.');
+      if (periodIndex != -1) {
+        ingredientsText = ingredientsText.substring(0, periodIndex);
+      }
       RegExp exp = RegExp(r'(\d+,\d+)-([a-zA-Z]+)');
       ingredientsText = ingredientsText.replaceAllMapped(exp, (Match m) => '${m[1]?.replaceAll(',', '.')}-${m[2]}');
 
-      // Now split by commas after replacements
+      // Split the cleaned string by commas into a list.
       ingredients = ingredientsText.split(',');
-
-      // Optionally clean up any leading or trailing spaces from each ingredient
-      ingredients = ingredients.map((ingredient) => ingredient.trim()).toList();
-
-      // Optionally further clean if 'ingredients:' or similar prefix exists
-      if (ingredients.first.toLowerCase().contains('ingredients:')) {
-        ingredients[0] = ingredients.first.split(':').last.trim();
-      }
+      //print(ingredients);
+      // Trim whitespace around each ingredient.
+      //ingredients = ingredients.map((ingredient) => ingredient.trim()).toList();
     }
 
     return ingredients;
